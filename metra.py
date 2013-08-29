@@ -1,314 +1,53 @@
 import requests
+import json
+from collections import OrderedDict
+import datetime
 
-class MetraApi(object):
+def parse_datetime(odd_time):
+    unixtime = int(odd_time.strip('/Date()')) / 1000
+    return datetime.datetime.fromtimestamp(unixtime)
 
-    lines = {
-        'UP-N': {
-            'name': 'Union Pacific / North Line',
-            'stations': [
-                {'id': 'KENOSHA', 'name': 'Kenosha'},
-                {'id': 'WINTHROP', 'name': 'Winthrop Harbor '},
-                {'id': 'ZION', 'name': 'Zion '},
-                {'id': 'WAUKEGAN', 'name': 'Waukegan'},
-                {'id': 'NCHICAGO', 'name': 'North Chicago'},
-                {'id': 'GRTLAKES', 'name': 'Great Lakes'},
-                {'id': 'LAKEBLUFF', 'name': 'Lake Bluff '},
-                {'id': 'LKFOREST', 'name': 'Lake Forest'},
-                {'id': 'FTSHERIDAN', 'name': 'Fort Sheridan'},
-                {'id': 'HIGHWOOD', 'name': 'Highwood'},
-                {'id': 'HIGHLANDPK', 'name': 'Highland Park '},
-                {'id': 'RAVINIA', 'name': 'Ravinia'},
-                {'id': 'RAVINIAPK', 'name': 'Ravinia Park'},
-                {'id': 'BRAESIDE', 'name': 'Braeside'},
-                {'id': 'GLENCOE', 'name': 'Glencoe'},
-                {'id': 'HUBARDWOOD', 'name': 'Hubbard Woods'},
-                {'id': 'WINNETKA', 'name': 'Winnetka'},
-                {'id': 'INDIANHILL', 'name': 'Indian Hill '},
-                {'id': 'KENILWORTH', 'name': 'Kenilworth'},
-                {'id': 'WILMETTE', 'name': 'Wilmette'},
-                {'id': 'CENTRALST', 'name': 'Evanston Central Street'},
-                {'id': 'EVANSTON', 'name': 'Evanston Davis Street '},
-                {'id': 'MAINST', 'name': 'Evanston Main Street'},
-                {'id': 'ROGERPK', 'name': 'Rogers Park'},
-                {'id': 'RAVENSWOOD', 'name': 'Ravenswood'},
-                {'id': 'CLYBOURN', 'name': 'Clybourn'},
-                {'id': 'OTC', 'name': 'Ogilvie Transportation Center'}
-            ]
-        },
-        'MD-N': {
-            'name': 'Milwaukee District / North Line',
-            'stations': [
-                {'id': 'FOXLAKE', 'name': 'Fox Lake'},
-                {'id': 'INGLESIDE', 'name': 'Ingleside'},
-                {'id': 'LONGLAKE', 'name': 'Long Lake'},
-                {'id': 'ROUNDLAKE', 'name': 'Round Lake'},
-                {'id': 'GRAYSLAKE', 'name': 'Grayslake'},
-                {'id': 'PRAIRIEXNG', 'name': 'Prairie Crossing/Libertyville'},
-                {'id': 'LIBERTYVIL', 'name': 'Libertyville'},
-                {'id': 'LAKEFRST', 'name': 'Lake Forest'},
-                {'id': 'DEERFIELD', 'name': 'Deerfield'},
-                {'id': 'LAKECOOKRD', 'name': 'Lake Cook Road'},
-                {'id': 'NBROOK', 'name': 'Northbrook'},
-                {'id': 'NGLENVIEW', 'name': 'Glen of North Glenview'},
-                {'id': 'GLENVIEW', 'name': 'Glenview'},
-                {'id': 'GOLF', 'name': 'Golf'},
-                {'id': 'MORTONGRV', 'name': 'Morton Grove'},
-                {'id': 'EDGEBROOK', 'name': 'Edgebrook'},
-                {'id': 'FORESTGLEN', 'name': 'Forest Glen'},
-                {'id': 'MAYFAIR', 'name': 'Mayfair'},
-                {'id': 'GRAYLAND', 'name': 'Grayland'},
-                {'id': 'HEALY', 'name': 'Healy'},
-                {'id': 'WESTERNAVE', 'name': 'Western Avenue'},
-                {'id': 'CUS', 'name': 'Union Station'}
-            ]
-        },
-        'NCS': {
-            'name': 'North Central Service',
-            'stations': [
-                {'id': 'ANTIOCH', 'name': 'Antioch'},
-                {'id': 'LAKEVILLA', 'name': 'Lake Villa '},
-                {'id': 'ROUNDLKBCH', 'name': 'Round Lake Beach'},
-                {'id': 'GRAYSLK', 'name': 'ASH">Washington St. / Grayslake'},
-                {'id': 'PRAIRCROSS', 'name': 'Prairie Crossing / Libertyville'},
-                {'id': 'MUNDELEIN', 'name': 'Mundelein'},
-                {'id': 'VERNON', 'name': 'Vernon Hills '},
-                {'id': 'PRAIRIEVW', 'name': 'Prairie View'},
-                {'id': 'BUFFGROVE', 'name': 'Buffalo Grove'},
-                {'id': 'WHEELING', 'name': 'Wheeling'},
-                {'id': 'PROSPECTHG', 'name': 'Prospect Heights'},
-                {'id': 'OHARE', 'name': 'O\'Hare Transfer'},
-                {'id': 'ROSEMONT', 'name': 'Rosemont'},
-                {'id': 'SCHILLERPK', 'name': 'Schiller Park'},
-                {'id': 'FRANKLINPK', 'name': 'Belmont Ave / Franklin Park'},
-                {'id': 'RIVERGROVE', 'name': 'River Grove'},
-                {'id': 'WESTERNAVE', 'name': 'Western Avenue'},
-                {'id': 'CUS', 'name': 'Union Station'}
-            ]
-        },
-        'UP-NW': {
-            'name': 'Union Pacific / Northwest Line',
-            'stations': [
-                {"id": "HARVARD", "name": "Harvard"},
-                {"id": "MCHENRY", "name": "McHenry"},
-                {"id": "WOODSTOCK", "name": "Woodstock"},
-                {"id": "CRYSTAL", "name": "Crystal Lake"},
-                {"id": "PINGREE", "name": "Pingree Road"},
-                {"id": "CARY", "name": "Cary"},
-                {"id": "FOXRG", "name": "Fox River Grove"},
-                {"id": "BARRINGTON", "name": "Barrington"},
-                {"id": "PALATINE", "name": "Palatine"},
-                {"id": "ARLINGTNPK", "name": "Arlington Park (Race Track)"},
-                {"id": "ARLINGTNHT", "name": "Arlington Heights"},
-                {"id": "MTPROSPECT", "name": "Mount Prospect"},
-                {"id": "CUMBERLAND", "name": "Cumberland"},
-                {"id": "DESPLAINES", "name": "Des Plaines"},
-                {"id": "DEEROAD", "name": "Dee Road"},
-                {"id": "PARKRIDGE", "name": "Park Ridge"},
-                {"id": "EDISONPK", "name": "Edison Park"},
-                {"id": "NORWOODP", "name": "Norwood Park"},
-                {"id": "GLADSTONEP", "name": "Gladstone Park"},
-                {"id": "JEFFERSONP", "name": "Jefferson Park"},
-                {"id": "IRVINGPK", "name": "Irving Park"},
-                {"id": "CLYBOURN", "name": "Clybourn"},
-                {"id": "OTC", "name": "Ogilvie Transportation Center"}
-            ]
-        },
-        'MD-W': {
-            'name': 'Milwaukee District / West Line',
-            'stations': [
-                {"id": "BIGTIMBER", "name": "Big Timber Road"},
-                {"id": "ELGIN", "name": "Elgin"},
-                {"id": "NATIONALS", "name": "National Street"},
-                {"id": "BARTLETT", "name": "Bartlett"},
-                {"id": "HANOVERP", "name": "Hanover Park"},
-                {"id": "SCHAUM", "name": "Schaumburg"},
-                {"id": "ROSELLE", "name": "Roselle"},
-                {"id": "MEDINAH", "name": "Medinah"},
-                {"id": "ITASCA", "name": "Itasca"},
-                {"id": "WOODDALE", "name": "Wood Dale"},
-                {"id": "BENSENVIL", "name": "Bensenville"},
-                {"id": "MANNHEIM", "name": "Mannheim"},
-                {"id": "FRANKLIN", "name": "Franklin Park"},
-                {"id": "RIVERGROVE", "name": "River Grove"},
-                {"id": "ELMWOODPK", "name": "Elmwood Park"},
-                {"id": "MONTCLARE", "name": "Mont Clare"},
-                {"id": "MARS", "name": "Mars"},
-                {"id": "GALEWOOD", "name": "Galewood"},
-                {"id": "HANSONPK", "name": "Hanson Park"},
-                {"id": "GRAND-CIC", "name": "Grand / Cicero"},
-                {"id": "WESTERNAVE", "name": "Western Avenue"},
-                {"id": "CUS", "name": "Union Station"}
-            ]
-        },
-        'UP-W': {
-            'name': 'Union Pacific / West Line',
-            'stations': [
-                {"id": "ELBURN", "name": "Elburn"},
-                {"id": "LAFOX", "name": "La Fox"},
-                {"id": "GENEVA", "name": "Geneva"},
-                {"id": "WCHICAGO", "name": "West Chicago"},
-                {"id": "WINFIELD", "name": "Winfield"},
-                {"id": "WHEATON", "name": "Wheaton"},
-                {"id": "COLLEGEAVE", "name": "College Avenue"},
-                {"id": "GLENELLYN", "name": "Glen Ellyn"},
-                {"id": "LOMBARD", "name": "Lombard"},
-                {"id": "VILLAPARK", "name": "Villa Park"},
-                {"id": "ELMHURST", "name": "Elmhurst"},
-                {"id": "BERKELEY", "name": "Berkeley"},
-                {"id": "BELLWOOD", "name": "Bellwood"},
-                {"id": "MELROSEPK", "name": "Melrose Park"},
-                {"id": "MAYWOOD", "name": "Maywood"},
-                {"id": "RIVRFOREST", "name": "River Forest"},
-                {"id": "OAKPARK", "name": "Oak Park"},
-                {"id": "KEDZIE", "name": "Kedzie"},
-                {"id": "OTC", "name": "Ogilvie Transportation Center"}
-            ]
-        },
-        'BNSF': {
-            'name': 'BNSF Railway',
-            'stations': [
-                {"id": "AURORA", "name": "Aurora"},
-                {"id": "ROUTE59", "name": "Route 59"},
-                {"id": "NAPERVILLE", "name": "Naperville"},
-                {"id": "LISLE", "name": "Lisle"},
-                {"id": "BELMONT", "name": "Belmont"},
-                {"id": "MAINST-DG", "name": "Downers Grove Main Street"},
-                {"id": "FAIRVIEWDG", "name": "Fairview Avenue"},
-                {"id": "WESTMONT", "name": "Westmont"},
-                {"id": "CLARNDNHIL", "name": "Clarendon Hills"},
-                {"id": "WHINSDALE", "name": "West Hinsdale"},
-                {"id": "HINSDALE", "name": "Hinsdale"},
-                {"id": "HIGHLANDS", "name": "Highlands"},
-                {"id": "WESTSPRING", "name": "Western Springs"},
-                {"id": "STONEAVE", "name": "LaGrange Stone Avenue"},
-                {"id": "LAGRANGE", "name": "LaGrange Road"},
-                {"id": "CONGRESSPK", "name": "Congress Park"},
-                {"id": "BROOKFIELD", "name": "Brookfield"},
-                {"id": "HOLLYWOOD", "name": "Hollywood"},
-                {"id": "RIVERSIDE", "name": "Riverside"},
-                {"id": "HARLEM", "name": "Harlem Ave."},
-                {"id": "BERWYN", "name": "Berwyn"},
-                {"id": "LAVERGNE", "name": "LaVergne"},
-                {"id": "CICERO", "name": "Cicero"},
-                {"id": "BNWESTERN", "name": "Western Avenue"},
-                {"id": "HALSTED", "name": "Halsted"},
-                {"id": "CUS", "name": "Union Station"}
-            ]
-        },
-        'HC': {
-            'name': 'Heritage Corridor',
-            'stations': [
-                {"id": "JOLIET", "name": "Joliet"},
-                {"id": "LOCKPORT", "name": "Lockport"},
-                {"id": "LEMONT", "name": "Lemont"},
-                {"id": "WILLOWSPRN", "name": "Willow Springs"},
-                {"id": "SUMMIT", "name": "Summit"},
-                {"id": "CUS", "name": "Union Station"}
-            ]
-        },
-        'SWS': {
-            'name': 'SouthWest Service',
-            'stations': [
-                {"id": "MANHATTAN", "name": "Manhattan"},
-                {"id": "LARAWAY", "name": "New Lenox Laraway Road"},
-                {"id": "179TH-SWS", "name": "Orland Park 179th Street"},
-                {"id": "153RD-SWS", "name": "Orland Park 153rd Street"},
-                {"id": "143RD-SWS", "name": "Orland Park 143rd Street"},
-                {"id": "PALOSPARK", "name": "Palos Park"},
-                {"id": "PALOSHTS", "name": "Palos Heights"},
-                {"id": "WORTH", "name": "Worth"},
-                {"id": "CHICRIDGE", "name": "Chicago Ridge"},
-                {"id": "OAKLAWN", "name": "Oak Lawn"},
-                {"id": "ASHBURN", "name": "Ashburn"},
-                {"id": "WRIGHTWOOD", "name": "Wrightwood"},
-                {"id": "CUS", "name": "Union Station"}
-            ]
-        },
-        'RI': {
-            'name': 'Rock Island District',
-            'stations': [
-                {"id": "JOLIET", "name": "Joliet"},
-                {"id": "NEWLENOX", "name": "New Lenox"},
-                {"id": "MOKENA", "name": "Mokena"},
-                {"id": "HICKORYCRK", "name": "Hickory Creek"},
-                {"id": "TINLEY80TH", "name": "Tinley Park - 80th Ave."},
-                {"id": "TINLEYPARK", "name": "Tinley Park"},
-                {"id": "OAKFOREST", "name": "Oak Forest"},
-                {"id": "MIDLOTHIAN", "name": "Midlothian"},
-                {"id": "ROBBINS", "name": "Robbins"},
-                {"id": "VERMONT", "name": "Blue Island - Vermont St."},
-                {"id": "PRAIRIEST", "name": "Prairie St."},
-                {"id": "123RD-BEV", "name": "123rd St."},
-                {"id": "119TH-BEV", "name": "119th Street"},
-                {"id": "115TH-BEV", "name": "Morgan Park - 115th Street"},
-                {"id": "111TH-BEV", "name": "Morgan Park - 111th Street"},
-                {"id": "107TH-BEV", "name": "Beverly Hills - 107th Street"},
-                {"id": "103RD-BEV", "name": "Beverly Hills - 103rd Street"},
-                {"id": "99TH-BEV", "name": "Beverly Hills - 99th Street"},
-                {"id": "95TH-BEV", "name": "Beverly Hills - 95th Street"},
-                {"id": "91ST-BEV", "name": "Beverly Hills - 91st Street"},
-                {"id": "BRAINERD", "name": "Brainerd"},
-                {"id": "WASHHGTS", "name": "103rd St., Washington Hts"},
-                {"id": "LONGWOOD", "name": "95th St. - Longwood"},
-                {"id": "GRESHAM", "name": "Gresham"},
-                {"id": "35TH", "name": "35th Street / 'Lou' Jones / Bronzeville"},
-                {"id": "LSS", "name": "LaSalle Street Station"}
-            ]
-        },
-        'ME': {
-            'name': 'Metra Electric District',
-            'stations': [
-                {"id": "BLUEISLAND", "name": "Blue Island"},
-                {"id": "BURROAK", "name": "Burr Oak"},
-                {"id": "ASHLAND", "name": "Ashland"},
-                {"id": "RACINE", "name": "Racine"},
-                {"id": "WPULLMAN", "name": "West Pullman"},
-                {"id": "STEWARTRID", "name": "Stewart Ridge"},
-                {"id": "STATEST", "name": "State Street"},
-                {"id": "93RD-SC", "name": "93rd St. (South Chicago)"},
-                {"id": "87TH-SC", "name": "87th St. (South Chicago)"},
-                {"id": "83RD-SC", "name": "83rd St. (South Chicago)"},
-                {"id": "79TH-SC", "name": "79th Street (Cheltenham)"},
-                {"id": "WINDSORPK", "name": "Windsor Park"},
-                {"id": "SOUTHSHORE", "name": "South Shore"},
-                {"id": "BRYNMAWR", "name": "Bryn Mawr"},
-                {"id": "STONYISLND", "name": "Stony Island"},
-                {"id": "UNIVERSITY", "name": "University Park"},
-                {"id": "RICHTON", "name": "Richton Park"},
-                {"id": "MATTESON", "name": "Matteson"},
-                {"id": "211TH-UP", "name": "211th Street (Lincoln Highway)"},
-                {"id": "OLYMPIA", "name": "Olympia Fields"},
-                {"id": "FLOSSMOOR", "name": "Flossmoor"},
-                {"id": "HOMEWOOD", "name": "Homewood"},
-                {"id": "CALUMET", "name": "Calumet"},
-                {"id": "HAZELCREST", "name": "Hazel Crest"},
-                {"id": "HARVEY", "name": "Harvey"},
-                {"id": "147TH-UP", "name": "147th Street (Sibley Boulevard)"},
-                {"id": "IVANHOE", "name": "Ivanhoe"},
-                {"id": "RIVERDALE", "name": "Riverdale"},
-                {"id": "KENSINGTN", "name": "Kensington / 115th Street"},
-                {"id": "111TH-UP", "name": "111th Street (Pullman)"},
-                {"id": "107TH-UP", "name": "107th Street"},
-                {"id": "103RD-UP", "name": "103rd Street (Rosemoor)"},
-                {"id": "95TH-UP", "name": "95th St., Chicago State Univ."},
-                {"id": "91ST-UP", "name": "91st Street (Chesterfield)"},
-                {"id": "87TH-UP", "name": "87th Street (Woodruff)"},
-                {"id": "83RD-UP", "name": "83rd Street (Avalon Park)"},
-                {"id": "79TH-UP", "name": "79th St., Chatham"},
-                {"id": "75TH-UP", "name": "75th Street (Grand Crossing)"},
-                {"id": "63RD-UP", "name": "63rd Street"},
-                {"id": "59TH-UP", "name": "59th St., Univ. of Chicago"},
-                {"id": "55-56-57TH", "name": "55th - 56th - 57th Street"},
-                {"id": "51ST-53RD", "name": "51st / 53rd Street (Hyde Park)"},
-                {"id": "47TH-UP", "name": "47th Street (Kenwood)"},
-                {"id": "27TH-UP", "name": "27th Street"},
-                {"id": "MCCORMICK", "name": "McCormick Place"},
-                {"id": "18TH-UP", "name": "18th Street"},
-                {"id": "MUSEUM", "name": "Museum Campus / 11th Street"},
-                {"id": "VANBUREN", "name": "Van Buren Street"},
-                {"id": "RANDOLPH", "name": "Millennium Station"}
-            ]
+def get_stations_from_line(line_id):
+    result = requests.get('http://metrarail.com/content/metra/en/home/jcr:content/trainTracker.get_stations_from_line.json', params={'trackerNumber': 0, 'trainLineId': line_id})
+    stations = result.json(object_pairs_hook=OrderedDict)['stations']
+
+    return [{'id': station['id'], 'name': station['name']} for station in stations.values()]
+
+def get_arrival_times(line_id, origin_station_id, destination_station_id):
+    headers = {
+        'Content-Type': 'application/json; charset=UTF-8'
+    }
+    payload = {
+        "stationRequest": {
+            "Corridor": line_id,
+            "Destination": destination_station_id,
+            "Origin": origin_station_id
         }
     }
+    result = requests.post('http://12.205.200.243/AJAXTrainTracker.svc/GetAcquityTrainData', headers=headers, data=json.dumps(payload))
 
-    def get_arrival_times(line_id, station_id):
+    d = result.json()['d']
+    data = json.loads(d)
+
+    def build_arrival(train):
+        return {'estimated_dpt_time': parse_datetime(train['estimated_dpt_time']),
+             'scheduled_dpt_time': parse_datetime(train['scheduled_dpt_time']),
+             'dpt_station': train['dpt_station'],
+             'train_num': train['train_num'],
+             'state': train['RunState']}
+
+    arrivals = []
+    for (k,v) in data.iteritems():
+        if k.startswith('train'):
+            arrivals.append(build_arrival(v))
+
+    return arrivals
+
+if __name__ == '__main__':
+    stations = get_stations_from_line('UP-N')
+    for station in stations:
+        print "%(id)s: %(name)s" % station
+
+    times = get_arrival_times('UP-N', 'MAINST', 'OTC')
+    for arrival in times:
+        print "Train %(train_num)s is leaving %(dpt_station)s at %(estimated_dpt_time)s." % arrival
